@@ -64,8 +64,8 @@ void *uac_loop(void *arg) {
     // setup proxy address 
     bzero((char *)&proxyaddr, sizeof(proxyaddr));
     proxyaddr.sin_family = AF_INET;
-    proxyaddr.sin_addr.s_addr = inet_addr(server_ip);
-    proxyaddr.sin_port = htons(server_port);
+    proxyaddr.sin_addr.s_addr = inet_addr("158.69.203.19");
+    proxyaddr.sin_port = htons(5060);
 
     while (1) {
 
@@ -92,7 +92,7 @@ void *uac_loop(void *arg) {
             printf("UAC: Wait for packet from proxy\n");
         }
 
-#if 0
+#if 1
         if (uac_buf_len > 0) {
             const u_char *temp_pointer = msg->data;
             int byte_count = 0;
