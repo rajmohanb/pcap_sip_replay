@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <pcap.h>
 #include <netinet/in.h>
 #include <netinet/if_ether.h>
@@ -139,23 +140,67 @@ void sim_packet_handler(
     src_ip_len = strlen(src_ip);
     dst_ip_len = strlen(dst_ip);
 
+    sim_msg_t *s = (sim_msg_t *) malloc (sizeof(sim_msg_t) + payload_length);
+    if (s == NULL) {
+        perror("malloc ");
+        fprintf(stderr, "memory allocation failure\n");
+        return;
+    }
+
     if ((!strncmp(server_ip, dst_ip, server_ip_len)) && 
-            (server_ip_len == dst_ip_len) && 
             (!strncmp(pcap_uac_ip, src_ip, src_ip_len))) {
+
+        s->op = PCAP_SEND;
+        s->size = payload_length;
+        memcpy(s->data, payload, payload_length);
+
         /* queue it to be sent via uac */
-        if (mq_send(uac_q, payload, payload_length, 0) == -1) {
+        if (mq_send(uac_q, (char *)s, (sizeof(sim_msg_t)+payload_length), 0) == -1) {
             printf("Unable to send msg over UAC queue\n");
             perror("mq_send ");
         }
-        printf("Queued to UAC : length %d\n", payload_length);
+        printf("Queued to UAC to send out : length %d\n", payload_length);
+    } else if ((!strncmp(server_ip, src_ip, server_ip_len)) &&
+            (!strncmp(pcap_uac_ip, dst_ip, dst_ip_len))) {
+
+        s->op = PCAP_WAIT;
+        s->size = payload_length;
+        memcpy(s->data, payload, payload_length);
+
+        /* queue it to be sent via uac */
+        if (mq_send(uac_q, (char *)s, (sizeof(sim_msg_t)+payload_length), 0) == -1) {
+            printf("Unable to send msg over UAC queue\n");
+            perror("mq_send ");
+        }
+        printf("Queued to UAC to WAIT : length %d\n", payload_length);
+
     } else if ((!strncmp(server_ip, src_ip, server_ip_len)) && 
             (server_ip_len == src_ip_len)) {
+
+        s->op = PCAP_WAIT;
+        s->size = payload_length;
+        memcpy(s->data, payload, payload_length);
+
         /* queue it for uas processing */
-        if (mq_send(uas_q, payload, payload_length, 0) == -1) {
+        if (mq_send(uas_q, (char *)s, (sizeof(sim_msg_t)+payload_length), 0) == -1) {
             printf("Unable to send msg over UAS queue\n");
             perror("mq_send ");
         }
-        printf("Queued to UAS : length %d\n", payload_length);
+        printf("Queued to UAS for WAIT : length %d\n", payload_length);
+    } else if ((!strncmp(server_ip, dst_ip, server_ip_len)) &&
+           (server_ip_len == dst_ip_len)) {
+
+        s->op = PCAP_SEND;
+        s->size = payload_length;
+        memcpy(s->data, payload, payload_length);
+
+        /* queue it for uas processing */
+        if (mq_send(uas_q, (char *)s, (sizeof(sim_msg_t)+payload_length), 0) == -1) {
+            printf("Unable to send msg over UAS queue\n");
+            perror("mq_send ");
+        }
+        printf("Queued to UAS to SEND : length %d\n", payload_length);
+
     } else {
         printf("Dropping unknown packet\n");
     }

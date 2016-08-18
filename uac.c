@@ -92,7 +92,7 @@ void *uac_loop(void *arg) {
             printf("UAC: Wait for packet from proxy\n");
         }
 
-        /*
+#if 0
         if (uac_buf_len > 0) {
             const u_char *temp_pointer = msg->data;
             int byte_count = 0;
@@ -102,7 +102,7 @@ void *uac_loop(void *arg) {
             }
             printf("\n");
         }
-        */
+#endif
     }
     
     return NULL;
